@@ -2,6 +2,7 @@ package backstage
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -13,9 +14,6 @@ const (
 
 	// KindComponent is the kind for Backstage components.
 	KindComponent = "Component"
-
-	// TypeService is the type of component as a string, e.g. website.
-	TypeService = "service"
 )
 
 // Component is a representation of a Backstage Location.
@@ -52,13 +50,15 @@ func NewComponentParser() *ComponentParser {
 // Add a list of objects to the parser.
 //
 // The list should be a List type, e.g. PodList, DeploymentList etc.
+//
+// Labels are based on https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 func (p *ComponentParser) Add(list runtime.Object) error {
 	return meta.EachListItem(list, func(obj runtime.Object) error {
-		l, err := p.Accessor.Labels(obj)
+		labels, err := p.Accessor.Labels(obj)
 		if err != nil {
 			return fmt.Errorf("failed to get labels from %v: %w", obj, err)
 		}
-		componentName := l[nameLabel]
+		componentName := labels[nameLabel]
 		if componentName == "" {
 			return nil
 		}
@@ -68,8 +68,36 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 				name: componentName,
 			}
 		}
-		c.createdBy = l[createdByLabel]
+		c.createdBy = labels[createdByLabel]
+		c.componentType = labels[componentLabel]
+		if i := strings.SplitN(labels[instanceLabel], "-", 2); len(i) == 2 {
+			c.lifecycle = i[1]
+		}
+
+		annotations, err := p.Accessor.Annotations(obj)
+		if err != nil {
+			return fmt.Errorf("failed to get annotations from %v: %w", obj, err)
+		}
+
+		if rawTags := strings.Split(annotations[tagsAnnotation], ","); len(rawTags) != 0 {
+			tags := []string{}
+			for _, v := range rawTags {
+				if s := strings.TrimSpace(v); s != "" {
+					tags = append(tags, s)
+				}
+			}
+			c.tags = tags
+		}
+		c.description = annotations[descriptionAnnotation]
+		c.annotations = backstageAnnotations(annotations)
+
+		links, err := parseLinkAnnotations(annotations)
+		if err != nil {
+			return fmt.Errorf("failed to parse links in annotations: %w", err)
+		}
+		c.links = links
 		p.components[componentName] = c
+
 		return nil
 	})
 }
@@ -83,56 +111,60 @@ func (p *ComponentParser) Components() []Component {
 			APIVersion: BackstageAPIVersion,
 			Kind:       KindComponent,
 			Metadata: BackstageMetadata{
-				Name: v.name,
+				Name:        v.name,
+				Tags:        v.tags,
+				Description: v.description,
+				Annotations: v.annotations,
+				Links:       v.links,
 			},
-
 			Spec: ComponentSpec{
-				Owner: v.createdBy,
+				Owner:     v.createdBy,
+				Type:      v.componentType,
+				Lifecycle: v.lifecycle,
 			},
 		})
 	}
+
 	return result
 }
 
 type discoveryComponent struct {
-	name      string
-	createdBy string
+	name          string
+	description   string
+	createdBy     string
+	lifecycle     string
+	tags          []string
+	links         []Link
+	componentType string
+	annotations   map[string]string
 }
 
-// apiVersion: backstage.io/v1alpha1
-// kind: Component
-// metadata:
-//   name: artist-lookup
-//   description: Artist Lookup
-//   annotations:
-//     backstage.io/kubernetes-id: artist-lookup
-//   tags:
-//     - java
-//     - data
-//   links:
-//     - url: https://example.com/user
-//       title: Examples Users
-//       icon: user
-//     - url: https://example.com/group
-//       title: Example Group
-//       icon: group
-//     - url: https://example.com/cloud
-//       title: Link with Cloud Icon
-//       icon: cloud
-//     - url: https://example.com/dashboard
-//       title: Dashboard
-//       icon: dashboard
-//     - url: https://example.com/help
-//       title: Support
-//       icon: help
-//     - url: https://example.com/web
-//       title: Website
-//       icon: web
-//     - url: https://example.com/alert
-//       title: Alerts
-//       icon: alert
-// spec:
-//   type: service
-//   lifecycle: experimental
-//   owner: guests
-//   system: examples
+func backstageAnnotations(src map[string]string) map[string]string {
+	dst := map[string]string{}
+	for k, v := range src {
+		if parts := strings.SplitN(k, "/", 2); len(parts) == 2 {
+			if parts[0] == "backstage.io" {
+				dst[k] = v
+			}
+		}
+	}
+
+	return dst
+}
+
+func parseLinkAnnotations(annotations map[string]string) ([]Link, error) {
+	result := []Link{}
+	for k, v := range annotations {
+		if strings.HasPrefix(k, urlAnnotationPrefix) {
+			if parts := strings.SplitN(v, ",", 3); len(parts) == 3 {
+				result = append(result, Link{
+					URL:   strings.TrimSpace(parts[0]),
+					Title: strings.TrimSpace(parts[1]),
+					Icon:  strings.TrimSpace(parts[2]),
+				})
+			}
+		}
+	}
+
+	return result, nil
+}

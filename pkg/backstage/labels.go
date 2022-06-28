@@ -11,3 +11,11 @@ const (
 	componentLabel = "app.kubernetes.io/component"
 	createdByLabel = "app.kubernetes.io/created-by"
 )
+
+// Unofficial annotations.
+const (
+	tagsAnnotation        = "backstage.gitops.pro/tags"
+	descriptionAnnotation = "backstage.gitops.pro/description"
+
+	urlAnnotationPrefix = "backstage.gitops.pro/link-"
+)

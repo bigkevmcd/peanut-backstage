@@ -36,7 +36,16 @@ func TestParseComponents(t *testing.T) {
 						nameLabel:      "mysql",
 						componentLabel: "database",
 						createdByLabel: "test-team",
-					})),
+					}),
+						withAnnotations(map[string]string{
+							tagsAnnotation:                "java,data",
+							descriptionAnnotation:         "This is a test",
+							"testing.com/annotation":      "test-annotation",
+							"backstage.io/kubernetes-id":  "testing",
+							"backstage.gitops.pro/link-0": "https://example.com/user,Example Users,user",
+							"backstage.gitops.pro/link-1": "https://example.com/group,Example Groups,group",
+						}),
+					),
 				},
 			},
 			want: []Component{
@@ -44,10 +53,27 @@ func TestParseComponents(t *testing.T) {
 					APIVersion: BackstageAPIVersion,
 					Kind:       KindComponent,
 					Metadata: BackstageMetadata{
-						Name: "mysql",
+						Name:        "mysql",
+						Description: "This is a test",
+						Annotations: map[string]string{
+							"backstage.io/kubernetes-id": "testing",
+						},
+						Tags: []string{"data", "java"},
+						Links: []Link{
+							{
+								URL:   "https://example.com/user",
+								Title: "Example Users",
+								Icon:  "user",
+							},
+							{
+								URL:   "https://example.com/group",
+								Title: "Example Groups",
+								Icon:  "group",
+							},
+						},
 					},
 					Spec: ComponentSpec{
-						Type:      TypeService,
+						Type:      "database",
 						Lifecycle: "staging",
 						Owner:     "test-team",
 					},
@@ -55,137 +81,13 @@ func TestParseComponents(t *testing.T) {
 			},
 		},
 		// {
-		// 	name: "one application, two instances, no parents",
-		// 	items: [][]corev1.Pod{
-		// 		{
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "mysql-abcxzy",
-		// 				nameLabel:      "mysql",
-		// 				componentLabel: "database",
-		// 			})),
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "mysql-deftuv",
-		// 				nameLabel:      "mysql",
-		// 				componentLabel: "database",
-		// 			})),
-		// 		},
-		// 	},
-		// 	want: []Application{
-		// 		Application{
-		// 			Name:       "mysql",
-		// 			Instances:  []string{"mysql-abcxzy", "mysql-deftuv"},
-		// 			Components: []string{"database"},
-		// 		},
-		// 	},
+		// 	name: "multiple components",
 		// },
 		// {
-		// 	name: "two applications, one instance, with a parent",
-		// 	items: [][]corev1.Pod{
-		// 		{
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "mysql-abcxzy",
-		// 				nameLabel:      "mysql",
-		// 				componentLabel: "database",
-		// 				partOfLabel:    "wordpress",
-		// 			})),
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "php-deftuv",
-		// 				nameLabel:      "php",
-		// 				componentLabel: "web",
-		// 				partOfLabel:    "wordpress",
-		// 			})),
-		// 		},
-		// 	},
-		// 	want: []Application{
-		// 		Application{
-		// 			Name:       "mysql",
-		// 			Instances:  []string{"mysql-abcxzy"},
-		// 			Components: []string{"database"},
-		// 			Parents:    []Application{{Name: "wordpress"}},
-		// 		},
-		// 		{
-		// 			Name:       "php",
-		// 			Instances:  []string{"php-deftuv"},
-		// 			Components: []string{"web"},
-		// 			Parents:    []Application{{Name: "wordpress"}},
-		// 		},
-		// 		{
-		// 			Name: "wordpress",
-		// 		},
-		// 	},
+		// 	name: "invalid instance label e.g. staging",
 		// },
 		// {
-		// 	name: "three applications, one instance, with nested parents",
-		// 	items: [][]corev1.Pod{
-		// 		{
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "mysql-abcxzy",
-		// 				nameLabel:      "mysql",
-		// 				componentLabel: "database",
-		// 				partOfLabel:    "server",
-		// 			})),
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "php-deftuv",
-		// 				nameLabel:      "php",
-		// 				componentLabel: "web",
-		// 				partOfLabel:    "server",
-		// 			})),
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:  "php-deftuv",
-		// 				nameLabel:      "server",
-		// 				componentLabel: "web",
-		// 				partOfLabel:    "wordpress",
-		// 			})),
-		// 		},
-		// 	},
-		// 	want: []Application{
-		// 		Application{
-		// 			Name:       "mysql",
-		// 			Instances:  []string{"mysql-abcxzy"},
-		// 			Components: []string{"database"},
-		// 			Parents:    []Application{{Name: "server"}},
-		// 		},
-		// 		{
-		// 			Name:       "php",
-		// 			Instances:  []string{"php-deftuv"},
-		// 			Components: []string{"web"},
-		// 			Parents:    []Application{{Name: "server"}},
-		// 		},
-		// 		{
-		// 			Name:       "server",
-		// 			Instances:  []string{"php-deftuv"},
-		// 			Components: []string{"web"},
-		// 			Parents:    []Application{{Name: "wordpress"}},
-		// 		},
-		// 		{
-		// 			Name: "wordpress",
-		// 		},
-		// 	},
-		// },
-
-		// {
-		// 	name: "simple application, with kustomization labels",
-		// 	items: [][]corev1.Pod{
-		// 		{
-		// 			makePod(withLabels(map[string]string{
-		// 				instanceLabel:          "mysql-abcxzy",
-		// 				nameLabel:              "mysql",
-		// 				componentLabel:         "database",
-		// 				kustomizationNamespace: "testing",
-		// 				kustomizationName:      "abcxzy",
-		// 			})),
-		// 		},
-		// 	},
-		// 	want: []Application{
-		// 		Application{
-		// 			Name:       "mysql",
-		// 			Instances:  []string{"mysql-abcxzy"},
-		// 			Components: []string{"database"},
-		// 			Kustomizations: []types.NamespacedName{
-		// 				{Name: "abcxzy", Namespace: "testing"},
-		// 			},
-		// 		},
-		// 	},
+		// 	name: "invalid tags",
 		// },
 	}
 	strSort := func(x, y string) bool {
@@ -225,6 +127,13 @@ func withLabels(m map[string]string) func(runtime.Object) {
 	var accessor = meta.NewAccessor()
 	return func(obj runtime.Object) {
 		accessor.SetLabels(obj, m)
+	}
+}
+
+func withAnnotations(m map[string]string) func(runtime.Object) {
+	var accessor = meta.NewAccessor()
+	return func(obj runtime.Object) {
+		accessor.SetAnnotations(obj, m)
 	}
 }
 
