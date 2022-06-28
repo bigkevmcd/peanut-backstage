@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	// BackstageAPIVersion Used in all Backstage resources.
-	BackstageAPIVersion = "backstage.io/v1alpha1"
+	// APIVersion used in all Backstage resources.
+	APIVersion = "backstage.io/v1alpha1"
 
 	// KindComponent is the kind for Backstage components.
 	KindComponent = "Component"
@@ -70,6 +70,7 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 		}
 		c.createdBy = labels[createdByLabel]
 		c.componentType = labels[componentLabel]
+		c.system = labels[partOfLabel]
 		if i := strings.SplitN(labels[instanceLabel], "-", 2); len(i) == 2 {
 			c.lifecycle = i[1]
 		}
@@ -108,7 +109,7 @@ func (p *ComponentParser) Components() []Component {
 	result := []Component{}
 	for _, v := range p.components {
 		result = append(result, Component{
-			APIVersion: BackstageAPIVersion,
+			APIVersion: APIVersion,
 			Kind:       KindComponent,
 			Metadata: BackstageMetadata{
 				Name:        v.name,
@@ -121,6 +122,7 @@ func (p *ComponentParser) Components() []Component {
 				Owner:     v.createdBy,
 				Type:      v.componentType,
 				Lifecycle: v.lifecycle,
+				System:    v.system,
 			},
 		})
 	}
@@ -133,6 +135,7 @@ type discoveryComponent struct {
 	description   string
 	createdBy     string
 	lifecycle     string
+	system        string
 	tags          []string
 	links         []Link
 	componentType string

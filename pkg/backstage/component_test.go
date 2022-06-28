@@ -4,40 +4,40 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bigkevmcd/peanut-backstage/test"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 func TestParseComponents(t *testing.T) {
 	discoverTests := []struct {
 		name  string
-		items [][]corev1.Pod
+		items [][]appsv1.Deployment
 		want  []Component
 	}{
 		{
 			name: "pods with no labels",
-			items: [][]corev1.Pod{
+			items: [][]appsv1.Deployment{
 				{
-					makePod(),
+					test.NewDeployment("test", "test-ns"),
 				},
 			},
 			want: []Component{},
 		},
 		{
 			name: "single component",
-			items: [][]corev1.Pod{
+			items: [][]appsv1.Deployment{
 				{
-					makePod(withLabels(map[string]string{
-						instanceLabel:  "mysql-staging",
-						nameLabel:      "mysql",
-						componentLabel: "database",
-						createdByLabel: "test-team",
-					}),
-						withAnnotations(map[string]string{
+					test.NewDeployment("test", "test-ns",
+						test.WithLabels(map[string]string{
+							instanceLabel:  "mysql-staging",
+							nameLabel:      "mysql",
+							componentLabel: "database",
+							createdByLabel: "test-team",
+							partOfLabel:    "user-db",
+						}),
+						test.WithAnnotations(map[string]string{
 							tagsAnnotation:                "java,data",
 							descriptionAnnotation:         "This is a test",
 							"testing.com/annotation":      "test-annotation",
@@ -50,7 +50,7 @@ func TestParseComponents(t *testing.T) {
 			},
 			want: []Component{
 				{
-					APIVersion: BackstageAPIVersion,
+					APIVersion: APIVersion,
 					Kind:       KindComponent,
 					Metadata: BackstageMetadata{
 						Name:        "mysql",
@@ -76,6 +76,7 @@ func TestParseComponents(t *testing.T) {
 						Type:      "database",
 						Lifecycle: "staging",
 						Owner:     "test-team",
+						System:    "user-db",
 					},
 				},
 			},
@@ -98,7 +99,7 @@ func TestParseComponents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewComponentParser()
 			for _, v := range tt.items {
-				pods := &corev1.PodList{
+				pods := &appsv1.DeploymentList{
 					Items: v,
 				}
 
@@ -112,33 +113,5 @@ func TestParseComponents(t *testing.T) {
 				t.Fatalf("failed discovery:\n%s", diff)
 			}
 		})
-	}
-}
-
-func makePod(opts ...func(runtime.Object)) corev1.Pod {
-	p := corev1.Pod{}
-	for _, o := range opts {
-		o(&p)
-	}
-	return p
-}
-
-func withLabels(m map[string]string) func(runtime.Object) {
-	var accessor = meta.NewAccessor()
-	return func(obj runtime.Object) {
-		accessor.SetLabels(obj, m)
-	}
-}
-
-func withAnnotations(m map[string]string) func(runtime.Object) {
-	var accessor = meta.NewAccessor()
-	return func(obj runtime.Object) {
-		accessor.SetAnnotations(obj, m)
-	}
-}
-
-func makeObjectMetaWithLabels(m map[string]string) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Labels: m,
 	}
 }
