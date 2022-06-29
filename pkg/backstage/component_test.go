@@ -31,19 +31,20 @@ func TestParseComponents(t *testing.T) {
 				{
 					test.NewDeployment("test", "test-ns",
 						test.WithLabels(map[string]string{
-							instanceLabel:  "mysql-staging",
-							nameLabel:      "mysql",
-							componentLabel: "database",
-							createdByLabel: "test-team",
-							partOfLabel:    "user-db",
+							instanceLabel:                "mysql-staging",
+							nameLabel:                    "mysql",
+							componentLabel:               "database",
+							createdByLabel:               "test-team",
+							partOfLabel:                  "user-db",
+							"backstage.io/kubernetes-id": "testing",
 						}),
 						test.WithAnnotations(map[string]string{
-							tagsAnnotation:                "java,data",
-							descriptionAnnotation:         "This is a test",
-							"testing.com/annotation":      "test-annotation",
-							"backstage.io/kubernetes-id":  "testing",
-							"backstage.gitops.pro/link-0": "https://example.com/user,Example Users,user",
-							"backstage.gitops.pro/link-1": "https://example.com/group,Example Groups,group",
+							tagsAnnotation:                           "java,data",
+							descriptionAnnotation:                    "This is a test",
+							"testing.com/annotation":                 "test-annotation",
+							"backstage.gitops.pro/link-0":            "https://example.com/user,Example Users,user",
+							"backstage.gitops.pro/link-1":            "https://example.com/group,Example Groups,group",
+							"backstage.io/kubernetes-label-selector": "app=my-app,component=front-end",
 						}),
 					),
 				},
@@ -56,7 +57,8 @@ func TestParseComponents(t *testing.T) {
 						Name:        "mysql",
 						Description: "This is a test",
 						Annotations: map[string]string{
-							"backstage.io/kubernetes-id": "testing",
+							"backstage.io/kubernetes-label-selector": "app=my-app,component=front-end",
+							"backstage.io/kubernetes-id":             "testing",
 						},
 						Tags: []string{"data", "java"},
 						Links: []Link{
@@ -89,6 +91,12 @@ func TestParseComponents(t *testing.T) {
 		// },
 		// {
 		// 	name: "invalid tags",
+		// },
+		// {
+		// 	name: "invalid system",
+		// },
+		// {
+		// 	name: "invalid links",
 		// },
 	}
 	strSort := func(x, y string) bool {

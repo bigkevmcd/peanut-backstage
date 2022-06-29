@@ -2,8 +2,11 @@ package backstage
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -62,6 +65,7 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 		if componentName == "" {
 			return nil
 		}
+		// TODO: split the parsing of the component out
 		c, ok := p.components[componentName]
 		if !ok {
 			c = discoveryComponent{
@@ -90,13 +94,20 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 			c.tags = tags
 		}
 		c.description = annotations[descriptionAnnotation]
+
+		// this merges labels and annotations from the K8s resource into the
+		// annotations on the component if they are backstage annotations.
+		// i.e. start with backstage.io
+		// keys in labels override keys in annotations.
 		c.annotations = backstageAnnotations(annotations)
+		maps.Copy(c.annotations, backstageAnnotations(labels))
 
 		links, err := parseLinkAnnotations(annotations)
 		if err != nil {
 			return fmt.Errorf("failed to parse links in annotations: %w", err)
 		}
 		c.links = links
+
 		p.components[componentName] = c
 
 		return nil
@@ -156,17 +167,34 @@ func backstageAnnotations(src map[string]string) map[string]string {
 }
 
 func parseLinkAnnotations(annotations map[string]string) ([]Link, error) {
-	result := []Link{}
+	type link struct {
+		seq   int
+		url   string
+		title string
+		icon  string
+	}
+	links := []link{}
+
 	for k, v := range annotations {
 		if strings.HasPrefix(k, urlAnnotationPrefix) {
+			seq, err := strconv.Atoi(strings.TrimPrefix(k, urlAnnotationPrefix))
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse link annotation %q: %w", k, err)
+			}
 			if parts := strings.SplitN(v, ",", 3); len(parts) == 3 {
-				result = append(result, Link{
-					URL:   strings.TrimSpace(parts[0]),
-					Title: strings.TrimSpace(parts[1]),
-					Icon:  strings.TrimSpace(parts[2]),
+				links = append(links, link{
+					seq:   seq,
+					url:   strings.TrimSpace(parts[0]),
+					title: strings.TrimSpace(parts[1]),
+					icon:  strings.TrimSpace(parts[2]),
 				})
 			}
 		}
+	}
+	sort.Slice(links, func(i, j int) bool { return links[i].seq < links[j].seq })
+	result := []Link{}
+	for _, v := range links {
+		result = append(result, Link{URL: v.url, Title: v.title, Icon: v.icon})
 	}
 
 	return result, nil
