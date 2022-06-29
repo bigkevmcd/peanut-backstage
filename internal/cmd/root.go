@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-logr/zapr"
@@ -51,7 +50,7 @@ func newRootCmd() *cobra.Command {
 			router := httpapi.NewRouter(logger, cl)
 
 			port := viper.GetString(portFlag)
-			log.Printf("listening on http://localhost:%s/", port)
+			fmt.Printf("serving the root catalog at http://localhost:%s/backstage/catalog-info.yaml\n", port)
 			return http.ListenAndServe(fmt.Sprintf(":%s", port), router)
 		},
 	}

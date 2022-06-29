@@ -3,27 +3,28 @@ kind: Deployment
 metadata:
   name: nginx-deployment
   labels:
-    app.kubernetes.io/component: database
+    app.kubernetes.io/component: web-server
     app.kubernetes.io/created-by: test-team
-    app.kubernetes.io/instance: mysql-staging
-    app.kubernetes.io/name: mysql
+    app.kubernetes.io/instance: nginx-staging
+    app.kubernetes.io/name: nginx
     app.kubernetes.io/part-of: user-system
+    backstage.io/kubernetes-id: user-system
   annotations:
     backstage.gitops.pro/description: This is a test
     backstage.gitops.pro/link-0: https://example.com/user,Example Users,user
     backstage.gitops.pro/link-1: https://example.com/group,Example Groups,group
-    backstage.gitops.pro/tags: java,data
+    backstage.gitops.pro/tags: nginx,data
     backstage.io/kubernetes-id: testing
     testing.com/annotation: test-annotation
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app.kubernetes.io/name: mysql
+      app.kubernetes.io/name: nginx
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: mysql
+        app.kubernetes.io/name: nginx
     spec:
       containers:
       - name: nginx
