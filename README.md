@@ -19,6 +19,7 @@ metadata:
     app.kubernetes.io/instance: nginx-staging
     app.kubernetes.io/name: nginx
     app.kubernetes.io/part-of: user-system
+    backstage.gitops.pro/lifecycle: staging
     backstage.io/kubernetes-id: user-system
   annotations:
     backstage.gitops.pro/description: This is a test

@@ -12,6 +12,11 @@ const (
 	createdByLabel = "app.kubernetes.io/created-by"
 )
 
+// Unofficial labels.
+const (
+	lifecycleLabel = "backstage.gitops.pro/lifecycle"
+)
+
 // Unofficial annotations.
 const (
 	tagsAnnotation        = "backstage.gitops.pro/tags"

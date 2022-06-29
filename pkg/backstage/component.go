@@ -72,12 +72,17 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 				name: componentName,
 			}
 		}
+		// TODO: what should we do about multiple discovered values for this?
+		// Backstage keys are not generally "multi-value"
+		// Perhaps create a set to store them in discovery
+		// but with a `.one() (string, err)
+
 		c.createdBy = labels[createdByLabel]
 		c.componentType = labels[componentLabel]
 		c.system = labels[partOfLabel]
-		if i := strings.SplitN(labels[instanceLabel], "-", 2); len(i) == 2 {
-			c.lifecycle = i[1]
-		}
+		c.lifecycle = labels[lifecycleLabel]
+		// TODO: annotate the component with something to indicate which
+		// resource it came from
 
 		annotations, err := p.Accessor.Annotations(obj)
 		if err != nil {
@@ -181,6 +186,7 @@ func parseLinkAnnotations(annotations map[string]string) ([]Link, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse link annotation %q: %w", k, err)
 			}
+			// TODO: check which fields are required for Links
 			if parts := strings.SplitN(v, ",", 3); len(parts) == 3 {
 				links = append(links, link{
 					seq:   seq,

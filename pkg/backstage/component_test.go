@@ -17,7 +17,7 @@ func TestParseComponents(t *testing.T) {
 		want  []Component
 	}{
 		{
-			name: "pods with no labels",
+			name: "deployment with no labels",
 			items: [][]appsv1.Deployment{
 				{
 					test.NewDeployment("test", "test-ns"),
@@ -26,7 +26,7 @@ func TestParseComponents(t *testing.T) {
 			want: []Component{},
 		},
 		{
-			name: "single component",
+			name: "deployment representing single component",
 			items: [][]appsv1.Deployment{
 				{
 					test.NewDeployment("test", "test-ns",
@@ -36,6 +36,7 @@ func TestParseComponents(t *testing.T) {
 							componentLabel:               "database",
 							createdByLabel:               "test-team",
 							partOfLabel:                  "user-db",
+							lifecycleLabel:               "staging",
 							"backstage.io/kubernetes-id": "testing",
 						}),
 						test.WithAnnotations(map[string]string{
@@ -83,9 +84,69 @@ func TestParseComponents(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name: "multiple components",
-		// },
+		{
+			name: "multiple deployments, multiple components",
+			items: [][]appsv1.Deployment{
+				{
+					test.NewDeployment("test-1", "test-ns",
+						test.WithLabels(map[string]string{
+							instanceLabel:                "mysql-production",
+							nameLabel:                    "mysql",
+							componentLabel:               "database",
+							createdByLabel:               "test-team",
+							partOfLabel:                  "user-db",
+							"backstage.io/kubernetes-id": "testing-production",
+						}),
+						test.WithAnnotations(map[string]string{
+							descriptionAnnotation: "This is a test",
+						}),
+					),
+					test.NewDeployment("test-2", "test-ns",
+						test.WithLabels(map[string]string{
+							instanceLabel:                "nginx-production",
+							nameLabel:                    "nginx",
+							componentLabel:               "webserver",
+							createdByLabel:               "test-team",
+							partOfLabel:                  "user-db",
+							"backstage.io/kubernetes-id": "testing-staging",
+						}),
+						test.WithAnnotations(map[string]string{
+							descriptionAnnotation: "This is a test",
+						}),
+					),
+				},
+			},
+			want: []Component{
+				{
+					APIVersion: "backstage.io/v1alpha1",
+					Kind:       "Component",
+					Metadata: BackstageMetadata{
+						Name:        "mysql",
+						Description: "This is a test",
+						Annotations: map[string]string{
+							"backstage.io/kubernetes-id": "testing-production",
+						},
+						Tags:  []string{},
+						Links: []Link{},
+					},
+					Spec: ComponentSpec{Type: "database", Owner: "test-team", System: "user-db"},
+				},
+				{
+					APIVersion: "backstage.io/v1alpha1",
+					Kind:       "Component",
+					Metadata: BackstageMetadata{
+						Name:        "nginx",
+						Description: "This is a test",
+						Annotations: map[string]string{
+							"backstage.io/kubernetes-id": "testing-staging",
+						},
+						Tags:  []string{},
+						Links: []Link{},
+					},
+					Spec: ComponentSpec{Type: "webserver", Owner: "test-team", System: "user-db"},
+				},
+			},
+		},
 		// {
 		// 	name: "invalid instance label e.g. staging",
 		// },
