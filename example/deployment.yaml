@@ -15,7 +15,6 @@ metadata:
     backstage.gitops.pro/link-0: https://example.com/user,Example Users,user
     backstage.gitops.pro/link-1: https://example.com/group,Example Groups,group
     backstage.gitops.pro/tags: nginx,data
-    backstage.io/kubernetes-id: testing
     testing.com/annotation: test-annotation
 spec:
   replicas: 3

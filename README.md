@@ -26,7 +26,6 @@ metadata:
     backstage.gitops.pro/link-0: https://example.com/user,Example Users,user
     backstage.gitops.pro/link-1: https://example.com/group,Example Groups,group
     backstage.gitops.pro/tags: nginx,data
-    backstage.io/kubernetes-id: testing
     testing.com/annotation: test-annotation
 spec:
   replicas: 3
@@ -52,10 +51,10 @@ $ kubectl create -f example/deployment.yaml
 deployment.apps/nginx-deployment created
 ```
 
-Run `peanuts-backstage`:
+Run `peanut-backstage`:
 
 ```console
-$ go run cmd/peanuts-backstage/main.go
+$ go run cmd/peanut-backstage/main.go
 serving the root catalog at http://localhost:8080/backstage/catalog-info.yaml
 ```
 
@@ -122,3 +121,4 @@ During the startup your browser will open at the catalog page:
  * Extract more than just Components
  * Come up with a way to specify the root Location name, description
  * Caching of the data
+ * **DOCUMENT** usage of labels!
