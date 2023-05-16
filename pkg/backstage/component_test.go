@@ -36,7 +36,7 @@ func TestParseComponents(t *testing.T) {
 							componentLabel:               "database",
 							createdByLabel:               "test-team",
 							partOfLabel:                  "user-db",
-							lifecycleLabel:               "staging",
+							LifecycleLabel:               "staging",
 							"backstage.io/kubernetes-id": "testing",
 						}),
 						test.WithAnnotations(map[string]string{

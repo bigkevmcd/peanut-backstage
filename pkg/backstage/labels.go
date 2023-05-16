@@ -14,7 +14,8 @@ const (
 
 // Unofficial labels.
 const (
-	lifecycleLabel = "backstage.gitops.pro/lifecycle"
+	// LifeCycle label provides the Backstage entity lifecycle stage.
+	LifecycleLabel = "backstage.gitops.pro/lifecycle"
 )
 
 // Unofficial annotations.

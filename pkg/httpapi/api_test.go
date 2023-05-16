@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	"github.com/bigkevmcd/peanut-backstage/pkg/backstage"
 	"github.com/bigkevmcd/peanut-backstage/test"
 )
 
@@ -62,10 +63,11 @@ func TestGetRootLocation(t *testing.T) {
 func TestGetComponent(t *testing.T) {
 	dep := test.NewDeployment("test", "test-ns",
 		test.WithLabels(map[string]string{
-			instanceLabel:  "mysql-staging",
-			nameLabel:      "mysql",
-			componentLabel: "database",
-			createdByLabel: "test-team",
+			instanceLabel:            "mysql-staging",
+			nameLabel:                "mysql",
+			componentLabel:           "database",
+			createdByLabel:           "test-team",
+			backstage.LifecycleLabel: "production",
 		}),
 	)
 
@@ -83,7 +85,7 @@ func TestGetComponent(t *testing.T) {
 			"name": "mysql",
 		},
 		"spec": map[string]interface{}{
-			"lifecycle": "staging",
+			"lifecycle": "production",
 			"owner":     "test-team",
 			"type":      "database",
 			"system":    "",

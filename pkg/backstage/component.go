@@ -80,7 +80,7 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 		c.createdBy = labels[createdByLabel]
 		c.componentType = labels[componentLabel]
 		c.system = labels[partOfLabel]
-		c.lifecycle = labels[lifecycleLabel]
+		c.lifecycle = labels[LifecycleLabel]
 		// TODO: annotate the component with something to indicate which
 		// resource it came from
 
