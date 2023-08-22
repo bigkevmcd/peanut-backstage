@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
+	"github.com/bigkevmcd/peanut-backstage/pkg/backstage"
 	"github.com/bigkevmcd/peanut-backstage/pkg/httpapi"
 )
 
@@ -42,6 +43,7 @@ func newRootCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newServeCmd())
+	cmd.AddCommand(newExportCmd())
 
 	return cmd
 }
@@ -77,6 +79,54 @@ func newServeCmd() *cobra.Command {
 		"enable debug logging",
 	)
 	cobra.CheckErr(viper.BindPFlag(listenFlag, cmd.Flags().Lookup(listenFlag)))
+
+	return cmd
+}
+
+// Execute is the main entry point into this component.
+func Execute() {
+	cobra.CheckErr(newRootCmd().Execute())
+}
+
+func makeLogger(debug bool) *zap.Logger {
+	var zapLog *zap.Logger
+	var err error
+	if debug {
+		zapLog, err = zap.NewDevelopment()
+	} else {
+		zapLog, err = zap.NewProduction()
+	}
+	cobra.CheckErr(err)
+
+	return zapLog
+}
+
+func newExportCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "Generate Backstage components from your command",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.GetConfig()
+			cobra.CheckErr(err)
+
+			cl, err := client.New(cfg, client.Options{Scheme: scheme})
+			cobra.CheckErr(err)
+
+			var deploymentList appsv1.DeploymentList
+			if err := a.client.List(r.Context(), &deploymentList); err != nil {
+				return err
+			}
+
+			parser := backstage.NewComponentParser()
+			if err := parser.Add(&deploymentList); err != nil {
+				return err
+			}
+
+			for _, v := range parser.Components() {
+			}
+		},
+	}
+
 	return cmd
 }
 
