@@ -1,6 +1,6 @@
 module github.com/bigkevmcd/peanut-backstage
 
-go 1.19
+go 1.21
 
 require (
 	github.com/go-logr/logr v1.2.4
@@ -10,7 +10,6 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1

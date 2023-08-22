@@ -12,16 +12,24 @@ const (
 	createdByLabel = "app.kubernetes.io/created-by"
 )
 
-// Unofficial labels.
-const (
-	// LifeCycle label provides the Backstage entity lifecycle stage.
-	LifecycleLabel = "backstage.gitops.pro/lifecycle"
-)
-
 // Unofficial annotations.
 const (
-	tagsAnnotation        = "backstage.gitops.pro/tags"
-	descriptionAnnotation = "backstage.gitops.pro/description"
+	// LifecycleAnnotation is used to populate spec.lifecycle for Components.
+	LifecycleAnnotation = "backstage.io/kubernetes-lifecycle"
+	// DescriptionAnnotation is used to populate the medata.description for
+	// Components.
+	DescriptionAnnotation = "backstage.io/kubernetes-description"
+	ownerAnnotation       = "backstage.io/kubernetes-owner"
+	systemAnnotation      = "backstage.io/kubernetes-system"
+	tagsAnnotation        = "backstage.io/kubernetes-tags"
 
 	urlAnnotationPrefix = "backstage.gitops.pro/link-"
 )
+
+var parsedAnnotations = []string{
+	LifecycleAnnotation,
+	DescriptionAnnotation,
+	ownerAnnotation,
+	systemAnnotation,
+	tagsAnnotation,
+}

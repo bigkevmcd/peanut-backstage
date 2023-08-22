@@ -54,7 +54,7 @@ deployment.apps/nginx-deployment created
 Run `peanut-backstage`:
 
 ```console
-$ go run cmd/peanut-backstage/main.go
+$ go run cmd/peanut-backstage/main.go serve
 serving the root catalog at http://localhost:8080/backstage/catalog-info.yaml
 ```
 

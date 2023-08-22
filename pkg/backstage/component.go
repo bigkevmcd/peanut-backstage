@@ -2,11 +2,12 @@ package backstage
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -80,7 +81,7 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 		c.createdBy = labels[createdByLabel]
 		c.componentType = labels[componentLabel]
 		c.system = labels[partOfLabel]
-		c.lifecycle = labels[LifecycleLabel]
+
 		// TODO: annotate the component with something to indicate which
 		// resource it came from
 
@@ -98,7 +99,10 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 			}
 			c.tags = tags
 		}
-		c.description = annotations[descriptionAnnotation]
+
+		// TODO: Strip these out
+		c.lifecycle = annotations[LifecycleAnnotation]
+		c.description = annotations[DescriptionAnnotation]
 
 		// this merges labels and annotations from the K8s resource into the
 		// annotations on the component if they are backstage annotations.
@@ -162,7 +166,7 @@ func backstageAnnotations(src map[string]string) map[string]string {
 	dst := map[string]string{}
 	for k, v := range src {
 		if parts := strings.SplitN(k, "/", 2); len(parts) == 2 {
-			if parts[0] == "backstage.io" {
+			if parts[0] == "backstage.io" && !slices.Contains(parsedAnnotations, k) {
 				dst[k] = v
 			}
 		}

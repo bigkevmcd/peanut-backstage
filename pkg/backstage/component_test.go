@@ -36,12 +36,12 @@ func TestParseComponents(t *testing.T) {
 							componentLabel:               "database",
 							createdByLabel:               "test-team",
 							partOfLabel:                  "user-db",
-							LifecycleLabel:               "staging",
 							"backstage.io/kubernetes-id": "testing",
 						}),
 						test.WithAnnotations(map[string]string{
 							tagsAnnotation:                           "java,data",
-							descriptionAnnotation:                    "This is a test",
+							DescriptionAnnotation:                    "This is a test",
+							LifecycleAnnotation:                      "staging",
 							"testing.com/annotation":                 "test-annotation",
 							"backstage.gitops.pro/link-0":            "https://example.com/user,Example Users,user",
 							"backstage.gitops.pro/link-1":            "https://example.com/group,Example Groups,group",
@@ -98,7 +98,7 @@ func TestParseComponents(t *testing.T) {
 							"backstage.io/kubernetes-id": "testing-production",
 						}),
 						test.WithAnnotations(map[string]string{
-							descriptionAnnotation: "This is a test",
+							DescriptionAnnotation: "This is a test",
 						}),
 					),
 					test.NewDeployment("test-2", "test-ns",
@@ -111,7 +111,7 @@ func TestParseComponents(t *testing.T) {
 							"backstage.io/kubernetes-id": "testing-staging",
 						}),
 						test.WithAnnotations(map[string]string{
-							descriptionAnnotation: "This is a test",
+							DescriptionAnnotation: "This is a test",
 						}),
 					),
 				},

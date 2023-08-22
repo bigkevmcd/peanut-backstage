@@ -39,6 +39,17 @@ func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "peanut-backstage",
 		Short: "Export Kubernetes resources as a Backstage catalog",
+	}
+
+	cmd.AddCommand(newServeCmd())
+
+	return cmd
+}
+
+func newServeCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Dynamic HTTP server serving Backstage components",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.GetConfig()
 			cobra.CheckErr(err)

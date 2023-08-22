@@ -63,11 +63,14 @@ func TestGetRootLocation(t *testing.T) {
 func TestGetComponent(t *testing.T) {
 	dep := test.NewDeployment("test", "test-ns",
 		test.WithLabels(map[string]string{
-			instanceLabel:            "mysql-staging",
-			nameLabel:                "mysql",
-			componentLabel:           "database",
-			createdByLabel:           "test-team",
-			backstage.LifecycleLabel: "production",
+			instanceLabel:  "mysql-staging",
+			nameLabel:      "mysql",
+			componentLabel: "database",
+			createdByLabel: "test-team",
+		}),
+		test.WithAnnotations(map[string]string{
+			backstage.LifecycleAnnotation:   "staging",
+			backstage.DescriptionAnnotation: "A simple test database",
 		}),
 	)
 
@@ -82,10 +85,11 @@ func TestGetComponent(t *testing.T) {
 		"apiVersion": "backstage.io/v1alpha1",
 		"kind":       "Component",
 		"metadata": map[string]interface{}{
-			"name": "mysql",
+			"name":        "mysql",
+			"description": "A simple test database",
 		},
 		"spec": map[string]interface{}{
-			"lifecycle": "production",
+			"lifecycle": "staging",
 			"owner":     "test-team",
 			"type":      "database",
 			"system":    "",
