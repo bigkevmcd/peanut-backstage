@@ -124,19 +124,19 @@ func assertYAMLResponse(t *testing.T, res *http.Response, want map[string]interf
 		t.Fatal(err)
 	}
 	if res.StatusCode != http.StatusOK {
-		t.Fatalf("didn't get a successful response: %v (%q)", res.StatusCode, bytes.TrimSpace(b))
+		t.Errorf("didn't get a successful response: %v (%q)", res.StatusCode, bytes.TrimSpace(b))
 	}
 
 	if h := res.Header.Get("Content-Type"); h != "application/yaml" {
-		t.Fatalf("wanted 'application/yaml' got %s", h)
+		t.Errorf("wanted 'application/yaml' got %s", h)
 	}
 	got := map[string]interface{}{}
 	err = yaml.Unmarshal(b, &got)
 	if err != nil {
-		t.Fatalf("failed to parse %s: %s", b, err)
+		t.Errorf("failed to parse %s: %s", b, err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("YAML response failed:\n%s", diff)
+		t.Errorf("YAML response failed:\n%s", diff)
 	}
 }
 
