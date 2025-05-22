@@ -27,8 +27,8 @@ func init() {
 }
 
 const (
-	portFlag  = "port"
-	debugFlag = "debug"
+	listenFlag = "listen"
+	debugFlag  = "debug"
 )
 
 func initConfig() {
@@ -60,23 +60,23 @@ func newServeCmd() *cobra.Command {
 			logger := zapr.NewLogger(makeLogger(viper.GetBool(debugFlag)))
 			router := httpapi.NewRouter(logger, cl)
 
-			port := viper.GetString(portFlag)
-			fmt.Printf("serving the root catalog at http://localhost:%s/backstage/catalog-info.yaml\n", port)
-			return http.ListenAndServe(fmt.Sprintf(":%s", port), router)
+			listen := viper.GetString(listenFlag)
+			fmt.Printf("serving the root catalog at http://%s/backstage/catalog-info.yaml\n", listen)
+			return http.ListenAndServe(listen, router)
 		},
 	}
 
-	cmd.Flags().Int(
-		portFlag,
-		8080,
-		"port to serve requests on",
+	cmd.Flags().String(
+		listenFlag,
+		"localhost:8080",
+		"listen address e.g. :8080",
 	)
 	cmd.Flags().Bool(
 		debugFlag,
 		false,
 		"enable debug logging",
 	)
-	cobra.CheckErr(viper.BindPFlag(portFlag, cmd.Flags().Lookup(portFlag)))
+	cobra.CheckErr(viper.BindPFlag(listenFlag, cmd.Flags().Lookup(listenFlag)))
 	return cmd
 }
 
