@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-logr/zapr"
 	"github.com/spf13/cobra"
@@ -27,8 +32,9 @@ func init() {
 }
 
 const (
-	listenFlag = "listen"
-	debugFlag  = "debug"
+	listenFlag             = "listen"
+	debugFlag              = "debug"
+	shutdownTimeoutSeconds = 30
 )
 
 func initConfig() {
@@ -61,8 +67,52 @@ func newServeCmd() *cobra.Command {
 			router := httpapi.NewRouter(logger, cl)
 
 			listen := viper.GetString(listenFlag)
-			fmt.Printf("serving the root catalog at http://%s/backstage/catalog-info.yaml\n", listen)
-			return http.ListenAndServe(listen, router)
+			
+			server := &http.Server{
+				Addr:              listen,
+				Handler:           router,
+				ReadHeaderTimeout: 10 * time.Second,
+				ReadTimeout:       30 * time.Second,
+				WriteTimeout:      30 * time.Second,
+				IdleTimeout:       120 * time.Second,
+			}
+
+			// Channel to listen for errors coming from the listener.
+			serverErrors := make(chan error, 1)
+
+			// Start the server
+			go func() {
+				logger.Info("starting server", "addr", listen)
+				fmt.Printf("serving the root catalog at http://%s/backstage/catalog-info.yaml\n", listen)
+				serverErrors <- server.ListenAndServe()
+			}()
+
+			// Channel to listen for an interrupt or terminate signal from the OS.
+			shutdown := make(chan os.Signal, 1)
+			signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+
+			// Blocking main and waiting for shutdown.
+			select {
+			case err := <-serverErrors:
+				return fmt.Errorf("server error: %w", err)
+
+			case sig := <-shutdown:
+				logger.Info("shutdown signal received", "signal", sig)
+
+				// Give outstanding requests a deadline for completion.
+				ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeoutSeconds*time.Second)
+				defer cancel()
+
+				// Asking listener to shut down and shed load.
+				if err := server.Shutdown(ctx); err != nil {
+					server.Close()
+					return fmt.Errorf("could not stop server gracefully: %w", err)
+				}
+				
+				logger.Info("server stopped gracefully")
+			}
+
+			return nil
 		},
 	}
 

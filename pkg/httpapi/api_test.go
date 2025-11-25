@@ -3,7 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -97,6 +97,57 @@ func TestGetComponent(t *testing.T) {
 	})
 }
 
+func TestGetComponentNotFound(t *testing.T) {
+	dep := test.NewDeployment("test", "test-ns",
+		test.WithLabels(map[string]string{
+			instanceLabel:  "mysql-staging",
+			nameLabel:      "mysql",
+			componentLabel: "database",
+			createdByLabel: "test-team",
+		}),
+	)
+
+	ts := newTestServer(t, newFakeClient(t, &dep))
+	req := makeClientRequest(t, ts, "/backstage/component/nonexistent/info.yaml")
+	res, err := ts.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusNotFound {
+		t.Errorf("expected status 404, got %d", res.StatusCode)
+	}
+}
+
+func TestGetComponentInvalidName(t *testing.T) {
+	testCases := []struct {
+		name         string
+		componentName string
+	}{
+		{"empty name", ""},
+		{"dot", "."},
+		{"double dot", ".."},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := newTestServer(t, newFakeClient(t))
+			path := fmt.Sprintf("/backstage/component/%s/info.yaml", tc.componentName)
+			req := makeClientRequest(t, ts, path)
+			res, err := ts.Client().Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer res.Body.Close()
+
+			if res.StatusCode != http.StatusBadRequest && res.StatusCode != http.StatusNotFound {
+				t.Errorf("expected status 400 or 404, got %d", res.StatusCode)
+			}
+		})
+	}
+}
+
 func newTestServer(t *testing.T, c client.Client) *httptest.Server {
 	router := NewRouter(zapr.NewLogger(zap.NewNop()), c)
 	ts := httptest.NewTLSServer(router)
@@ -119,7 +170,7 @@ func makeClientRequest(t *testing.T, ts *httptest.Server, path string, opts ...f
 func assertYAMLResponse(t *testing.T, res *http.Response, want map[string]interface{}) {
 	t.Helper()
 	defer res.Body.Close()
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatal(err)
 	}

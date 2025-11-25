@@ -1,3 +1,7 @@
+// Package backstage provides types and parsers for generating Backstage catalog
+// entities from Kubernetes resources. It extracts component metadata from
+// appropriately labeled and annotated Kubernetes resources following the
+// app.kubernetes.io label conventions.
 package backstage
 
 import (
@@ -20,7 +24,8 @@ const (
 	KindComponent = "Component"
 )
 
-// Component is a representation of a Backstage Location.
+// Component is a representation of a Backstage Component.
+// Components describe software components and their metadata.
 type Component struct {
 	APIVersion string            `yaml:"apiVersion"`
 	Kind       string            `yaml:"kind"`
@@ -28,7 +33,8 @@ type Component struct {
 	Spec       ComponentSpec     `yaml:"spec,omitempty"`
 }
 
-// ComponentSpec
+// ComponentSpec defines the specification for a Backstage Component.
+// It contains metadata about the component's type, lifecycle, ownership, and system membership.
 type ComponentSpec struct {
 	Type      string `yaml:"type"`
 	Lifecycle string `yaml:"lifecycle"`
@@ -36,14 +42,16 @@ type ComponentSpec struct {
 	System    string `yaml:"system"`
 }
 
-// ComponentParser parses the labels and annotations on runtime Objects and
-// extracts components from the labels and annotations.
+// ComponentParser parses Kubernetes resource labels and annotations to extract
+// Backstage components. It discovers components from appropriately labeled resources
+// following Kubernetes recommended labels (app.kubernetes.io/*).
 type ComponentParser struct {
 	Accessor   meta.MetadataAccessor
 	components map[string]discoveryComponent
 }
 
 // NewComponentParser creates and returns a new ComponentParser ready for use.
+// The parser can process multiple lists of Kubernetes resources via the Add method.
 func NewComponentParser() *ComponentParser {
 	return &ComponentParser{
 		Accessor:   meta.NewAccessor(),
@@ -54,6 +62,7 @@ func NewComponentParser() *ComponentParser {
 // Add a list of objects to the parser.
 //
 // The list should be a List type, e.g. PodList, DeploymentList etc.
+// Resources are parsed for Backstage-relevant labels and annotations.
 //
 // Labels are based on https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 func (p *ComponentParser) Add(list runtime.Object) error {
@@ -124,7 +133,8 @@ func (p *ComponentParser) Add(list runtime.Object) error {
 }
 
 // Components returns the Components that were discovered during the parsing
-// process.
+// process. Each component represents a unique application component found in
+// the parsed Kubernetes resources.
 func (p *ComponentParser) Components() []Component {
 	result := []Component{}
 	for _, v := range p.components {
@@ -186,19 +196,31 @@ func parseLinkAnnotations(annotations map[string]string) ([]Link, error) {
 
 	for k, v := range annotations {
 		if strings.HasPrefix(k, urlAnnotationPrefix) {
-			seq, err := strconv.Atoi(strings.TrimPrefix(k, urlAnnotationPrefix))
+			seqStr := strings.TrimPrefix(k, urlAnnotationPrefix)
+			seq, err := strconv.Atoi(seqStr)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse link annotation %q: %w", k, err)
+				return nil, fmt.Errorf("invalid link sequence number in annotation %q (value: %q): %w", k, seqStr, err)
 			}
-			// TODO: check which fields are required for Links
-			if parts := strings.SplitN(v, ",", 3); len(parts) == 3 {
-				links = append(links, link{
-					seq:   seq,
-					url:   strings.TrimSpace(parts[0]),
-					title: strings.TrimSpace(parts[1]),
-					icon:  strings.TrimSpace(parts[2]),
-				})
+			
+			parts := strings.SplitN(v, ",", 3)
+			if len(parts) != 3 {
+				return nil, fmt.Errorf("invalid link format in annotation %q: expected 'url,title,icon', got %q", k, v)
 			}
+			
+			url := strings.TrimSpace(parts[0])
+			title := strings.TrimSpace(parts[1])
+			icon := strings.TrimSpace(parts[2])
+			
+			if url == "" {
+				return nil, fmt.Errorf("empty URL in link annotation %q", k)
+			}
+			
+			links = append(links, link{
+				seq:   seq,
+				url:   url,
+				title: title,
+				icon:  icon,
+			})
 		}
 	}
 	sort.Slice(links, func(i, j int) bool { return links[i].seq < links[j].seq })

@@ -1,0 +1,32 @@
+# Git files
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Development files
+.vscode/
+.idea/
+
+# Test files
+*_test.go
+
+# Build artifacts
+peanut-backstage
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Deployment files
+deploy/
+example/
+
+# CI/CD
+.github/
+
+# OS files
+.DS_Store
+Thumbs.db
